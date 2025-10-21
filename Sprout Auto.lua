@@ -1,4 +1,4 @@
---[[ 🌱 Bee Swarm Auto Sprout System - Smart Load v2 (by Somsi & Meo, Final 2025) ]]
+--[[ 🌱 Bee Swarm Auto Sprout System - Smart Load v3 (by Somsi & Meo, 2025 Final Fix) ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 -- ✅ โหลด config จาก Loader
@@ -12,20 +12,30 @@ local delayTime = cfg.Delay or 5
 local enableLog = set.EnableLog or false
 local rejoinAfterDeath = set.RejoinAfterDeath or true
 
--- 🧩 โหลด UI Framework
+-- 🧩 โหลด WindUI Framework
 local Version = "1.6.41"
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
+local WindUILoader = "https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"
+local success, WindUI = pcall(function()
+    return loadstring(game:HttpGet(WindUILoader))()
+end)
+if not success then
+    warn("[AutoSprout] ❌ โหลด WindUI ไม่สำเร็จ:", WindUI)
+    return
+end
 
--- 🪟 สร้างหน้าต่างหลัก
+-- 🪟 สร้างหน้าต่างหลัก (เพิ่ม Folder เพื่อป้องกัน config error)
 local Window = WindUI:CreateWindow({
     Title = "🌱 Bee Swarm Simulator - Auto Sprout",
     Size = UDim2.fromOffset(340, 310),
     Theme = "Dark",
     SideBarWidth = 200,
-    Transparent = true
+    Transparent = true,
+    Folder = "SproutAutoConfig", -- ✅ Fix: WindUI ต้องการ Folder
+    HideSearchBar = true,
+    ScrollBarEnabled = false
 })
 
--- 🧭 แท็บ UI
+-- 🧭 แท็บ
 local Tabs = {
     Any = Window:Tab({ Title = "🌱 ใช้ Sprout ทุกเวลา" }),
     Day = Window:Tab({ Title = "☀️ ใช้เฉพาะกลางวัน" }),
@@ -65,7 +75,7 @@ local fieldPositions = {
 local fields = {}
 for name, _ in pairs(fieldPositions) do table.insert(fields, name) end
 
--- 🌱 ฟังก์ชันใช้งาน Sprout
+-- 🌱 ฟังก์ชันปลูก Sprout
 local function startAutoSprout(mode)
     task.spawn(function()
         while autoPlantEnabled do
@@ -74,7 +84,6 @@ local function startAutoSprout(mode)
                 if pos and humanoidRootPart then
                     humanoidRootPart.CFrame = CFrame.new(pos)
                     local time = Lighting.TimeOfDay
-
                     local canUse = (
                         mode == "Any" or
                         (mode == "Day" and string.sub(time, 1, 2) >= "06" and string.sub(time, 1, 2) < "18") or
@@ -105,7 +114,7 @@ player.CharacterAdded:Connect(function(newChar)
     end
 end)
 
--- 🧭 ฟังก์ชันสร้าง UI สำหรับแต่ละโหมด
+-- 🧭 สร้าง UI Tab
 local function setupTab(tab, modeName)
     tab:Dropdown({
         Title = "เลือกฟิลด์สำหรับ Sprout",
@@ -134,20 +143,14 @@ local function setupTab(tab, modeName)
     })
 end
 
--- 🪴 โหลดแท็บทั้งหมด
 setupTab(Tabs.Any, "Any")
 setupTab(Tabs.Day, "Day")
 setupTab(Tabs.Night, "Night")
 
--- ✅ Smart Load v2: รอจน UI พร้อมจริงก่อนเริ่ม
+-- ✅ Smart Load v3: ปลอดภัยต่อ WindUI ทุกเวอร์ชัน
 task.spawn(function()
-    -- 🔄 รอจนกว่า Tabs ทั้ง 3 จะถูกสร้างจริง
-    repeat
-        task.wait(0.2)
-    until (Tabs.Any and Tabs.Day and Tabs.Night)
-
-    -- รอเผื่อ layout ของ UI โหลดครบ
-    task.wait(0.5)
+    repeat task.wait(0.3) until Tabs.Any and Tabs.Day and Tabs.Night
+    task.wait(1) -- รอให้ UI สร้างเสร็จจริง
 
     if autoPlantEnabled then
         startAutoSprout(autoMode)
@@ -161,4 +164,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน (Smart Load v2)")
+print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน (Smart Load v3)")
