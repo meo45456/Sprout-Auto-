@@ -1,11 +1,11 @@
---[[ 🌱 Bee Swarm Auto Magic Bean System - by Somsi & Meo ]]
+--[[ 🌱 Bee Swarm Auto Sprout System - by Somsi & Meo (Final 2025) ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 -- ✅ อ่านค่าจาก Loader ถ้ามี
 local cfg = getgenv().AutoPlantConfig or {}
 local set = getgenv().AutoPlantSettings or {}
 
--- 🌾 ค่าพื้นฐานจาก Config
+-- ⚙️ ค่าพื้นฐานจาก Config
 local selectedFields = cfg.SelectedFields or { "Sunflower Field" }
 local autoMode = cfg.Mode or "Any"
 local autoPlantEnabled = cfg.EnableAutoPlant or false
@@ -17,20 +17,20 @@ local rejoinAfterDeath = set.RejoinAfterDeath or true
 local Version = "1.6.41"
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
 
--- สร้างหน้าต่างหลัก
+-- หน้าต่างหลัก
 local Window = WindUI:CreateWindow({
-    Title = "🐝 Bee Swarm Simulator - Auto Plant",
+    Title = "🌱 Bee Swarm Simulator - Auto Sprout",
     Size = UDim2.fromOffset(340, 310),
     Theme = "Dark",
     SideBarWidth = 200,
     Transparent = true
 })
 
--- Tabs UI
+-- Tabs
 local Tabs = {
-    Any = Window:Tab({ Title = "🌱 ปลูกไม่สนเวลา" }),
-    Day = Window:Tab({ Title = "☀️ ปลูกตอนเช้า" }),
-    Night = Window:Tab({ Title = "🌙 ปลูกตอนกลางคืน" })
+    Any = Window:Tab({ Title = "🌱 ใช้ Sprout ทุกเวลา" }),
+    Day = Window:Tab({ Title = "☀️ ใช้เฉพาะตอนกลางวัน" }),
+    Night = Window:Tab({ Title = "🌙 ใช้เฉพาะตอนกลางคืน" })
 }
 
 -- ตัวแปรหลัก
@@ -42,7 +42,7 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local Event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("PlayerActivesCommand")
 
--- รายชื่อฟิลด์ทั้งหมด
+-- 🗺️ พิกัดฟิลด์ทั้งหมด
 local fieldPositions = {
     ["Sunflower Field"] = Vector3.new(-213.106, 3.998, 172.139),
     ["Dandelion Field"] = Vector3.new(-31.570, 3.998, 220.934),
@@ -66,8 +66,8 @@ local fieldPositions = {
 local fields = {}
 for name, _ in pairs(fieldPositions) do table.insert(fields, name) end
 
--- 🌱 ฟังก์ชันปลูกอัตโนมัติ
-local function startAutoPlant(mode)
+-- 🌱 ฟังก์ชันใช้ Sprout อัตโนมัติ
+local function startAutoSprout(mode)
     task.spawn(function()
         while autoPlantEnabled do
             for _, fieldName in ipairs(selectedFields) do
@@ -76,18 +76,19 @@ local function startAutoPlant(mode)
                     humanoidRootPart.CFrame = CFrame.new(pos)
                     local time = Lighting.TimeOfDay
 
-                    local canPlant = (
+                    local canUse = (
                         mode == "Any" or
                         (mode == "Day" and string.sub(time, 1, 2) >= "06" and string.sub(time, 1, 2) < "18") or
                         (mode == "Night" and (string.sub(time, 1, 2) < "06" or string.sub(time, 1, 2) >= "18"))
                     )
 
-                    if canPlant then
-                        Event:FireServer({ Name = "Magic Bean" })
+                    if canUse then
+                        Event:FireServer({ Name = "Sprout" })
                         if enableLog then
-                            print(string.format("🌱 ปลูก Magic Bean ที่ฟิลด์: %s | โหมด: %s", fieldName, mode))
+                            print(string.format("🌾 ใช้ Sprout ที่ฟิลด์: %s | โหมด: %s", fieldName, mode))
                         end
                     end
+
                     task.wait(delayTime)
                 end
             end
@@ -95,23 +96,23 @@ local function startAutoPlant(mode)
     end)
 end
 
--- 🔁 กลับมาปลูกต่อหลังตัวละครตาย
+-- ♻️ ปลูกต่อหลังตัวละครตาย
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
     if rejoinAfterDeath and autoPlantEnabled then
         task.wait(2)
-        startAutoPlant(autoMode)
+        startAutoSprout(autoMode)
         if enableLog then
-            print("♻️ ตัวละครรีสปอน — กลับมาปลูกต่ออัตโนมัติ")
+            print("♻️ ตัวละครรีสปอน — ใช้ Sprout ต่ออัตโนมัติ")
         end
     end
 end)
 
--- 🧭 ฟังก์ชันสร้าง UI ของแต่ละแท็บ
+-- 🧭 UI ของแต่ละโหมด
 local function setupTab(tab, modeName)
     tab:Dropdown({
-        Title = "เลือกฟิลด์ที่จะปลูก",
+        Title = "เลือกฟิลด์ที่จะใช้ Sprout",
         Values = fields,
         Value = selectedFields,
         Multi = true,
@@ -122,33 +123,44 @@ local function setupTab(tab, modeName)
     })
 
     tab:Toggle({
-        Title = "เปิด/ปิด Auto Plant",
-        Default = (autoPlantEnabled and autoMode == modeName), -- ✅ อ่านค่าจาก config
+        Title = "เปิด/ปิด Auto Sprout",
+        Default = (autoPlantEnabled and autoMode == modeName),
         Callback = function(state)
             autoPlantEnabled = state
             autoMode = modeName
             if state then
-                startAutoPlant(modeName)
-                if enableLog then print("🚀 เริ่ม Auto Plant โหมด:", modeName) end
+                startAutoSprout(modeName)
+                if enableLog then print("🚀 เริ่ม Auto Sprout โหมด:", modeName) end
             else
-                if enableLog then print("🛑 ปิด Auto Plant โหมด:", modeName) end
+                if enableLog then print("🛑 ปิด Auto Sprout โหมด:", modeName) end
             end
         end
     })
+
+    -- ✅ ถ้าตั้งค่า EnableAutoPlant = true ให้เริ่มทันที
+    if autoPlantEnabled and autoMode == modeName then
+        task.spawn(function()
+            task.wait(1)
+            startAutoSprout(modeName)
+            if enableLog then
+                print("🌱 เริ่ม Auto Sprout อัตโนมัติจาก config:", modeName)
+            end
+        end)
+    end
 end
 
--- 🌾 สร้างแท็บทั้งสาม
+-- 🪴 สร้างแท็บทั้งหมด
 setupTab(Tabs.Any, "Any")
 setupTab(Tabs.Day, "Day")
 setupTab(Tabs.Night, "Night")
 
--- 🚀 เริ่มปลูกอัตโนมัติเมื่อ EnableAutoPlant = true
+-- 🚀 เริ่มใช้งานอัตโนมัติทันทีถ้ามีใน Config
 if autoPlantEnabled then
     task.spawn(function()
         task.wait(2)
-        print("🌱 เริ่มปลูกอัตโนมัติจาก Config ...")
-        startAutoPlant(autoMode)
+        startAutoSprout(autoMode)
+        print("🌾 เริ่ม Auto Sprout จาก Config ...")
     end)
 end
 
-print("✅ ระบบ Auto Plant โหลดสำเร็จ! พร้อมทำงาน")
+print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน")
