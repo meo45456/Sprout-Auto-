@@ -1,5 +1,5 @@
--- 🌻 Bee Swarm Auto Magic Bean (Real Count Classic by Somsi & Meo)
--- ปลูกอัตโนมัติ ตรวจเวลาแบบคลาสสิก + นับจำนวน Magic Bean ที่ใช้จริง
+-- 🌻 Bee Swarm Auto Magic Bean (Minimal Classic by Somsi & Meo)
+-- ปลูกอัตโนมัติ ตรวจเวลาแบบคลาสสิก ไม่มี HUD / ไม่มีการเช็กจำนวน Bean
 
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
@@ -37,10 +37,6 @@ local function startAutoPlant()
     local delay = getgenv().AutoPlantConfig.Delay
     local fields = getgenv().AutoPlantConfig.SelectedFields
     local mode = getgenv().AutoPlantConfig.Mode
-    local startCount = getMagicBeanCount()
-    local planted = 0
-
-    showStatus(("✅ เริ่มปลูก Magic Bean | คงเหลือ: %d"):format(startCount), Color3.fromRGB(0,255,0))
 
     while getgenv().AutoPlantConfig.EnableAutoPlant do
         for _, fieldName in ipairs(fields) do
@@ -56,10 +52,6 @@ local function startAutoPlant()
                     Event:FireServer({ Name = "Magic Bean" })
                 end
 
-                task.wait(1)
-                local nowCount = getMagicBeanCount()
-                planted = math.max(startCount - nowCount, 0)
-                showStatus(("🌱 ปลูกที่: %s | ปลูกไปแล้ว: %d | เหลือ: %d"):format(fieldName, planted, nowCount))
                 task.wait(delay)
             end
         end
@@ -71,12 +63,11 @@ player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
     task.wait(2)
-    if getgenv().AutoPlantSettings.RejoinAfterDeath then
-        showStatus("🔁 กลับมาปลูกต่อ...", Color3.fromRGB(0, 200, 255))
+    if getgenv().AutoPlantSettings and getgenv().AutoPlantSettings.RejoinAfterDeath then
         startAutoPlant()
     end
 end)
 
 -- ▶️ เริ่มทำงาน
 startAutoPlant()
-print("✅ Loaded: Bee Swarm Auto Magic Bean (Classic Real Count Version)")
+print("✅ Loaded: Bee Swarm Auto Magic Bean (Minimal Classic Version)")
