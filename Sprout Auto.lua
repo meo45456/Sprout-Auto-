@@ -1,11 +1,10 @@
---[[ 🌱 Bee Swarm Auto Sprout System - by Somsi & Meo (Final 2025) ]]
+--[[ 🌱 Bee Swarm Auto Sprout System - Smart Load Version (by Somsi & Meo, Final 2025) ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 
--- ✅ อ่านค่าจาก Loader ถ้ามี
+-- ✅ โหลด config จาก Loader
 local cfg = getgenv().AutoPlantConfig or {}
 local set = getgenv().AutoPlantSettings or {}
 
--- ⚙️ ค่าพื้นฐานจาก Config
 local selectedFields = cfg.SelectedFields or { "Sunflower Field" }
 local autoMode = cfg.Mode or "Any"
 local autoPlantEnabled = cfg.EnableAutoPlant or false
@@ -13,11 +12,11 @@ local delayTime = cfg.Delay or 5
 local enableLog = set.EnableLog or false
 local rejoinAfterDeath = set.RejoinAfterDeath or true
 
--- โหลด UI Framework
+-- 🧩 โหลด UI Framework
 local Version = "1.6.41"
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"))()
 
--- หน้าต่างหลัก
+-- 🪟 สร้างหน้าต่างหลัก
 local Window = WindUI:CreateWindow({
     Title = "🌱 Bee Swarm Simulator - Auto Sprout",
     Size = UDim2.fromOffset(340, 310),
@@ -26,14 +25,14 @@ local Window = WindUI:CreateWindow({
     Transparent = true
 })
 
--- Tabs
+-- 🧭 แท็บ
 local Tabs = {
     Any = Window:Tab({ Title = "🌱 ใช้ Sprout ทุกเวลา" }),
-    Day = Window:Tab({ Title = "☀️ ใช้เฉพาะตอนกลางวัน" }),
-    Night = Window:Tab({ Title = "🌙 ใช้เฉพาะตอนกลางคืน" })
+    Day = Window:Tab({ Title = "☀️ ใช้เฉพาะกลางวัน" }),
+    Night = Window:Tab({ Title = "🌙 ใช้เฉพาะกลางคืน" })
 }
 
--- ตัวแปรหลัก
+-- 🔧 ตัวแปรหลักในเกม
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -66,7 +65,7 @@ local fieldPositions = {
 local fields = {}
 for name, _ in pairs(fieldPositions) do table.insert(fields, name) end
 
--- 🌱 ฟังก์ชันใช้ Sprout อัตโนมัติ
+-- 🌱 ฟังก์ชันใช้งาน Sprout
 local function startAutoSprout(mode)
     task.spawn(function()
         while autoPlantEnabled do
@@ -88,7 +87,6 @@ local function startAutoSprout(mode)
                             print(string.format("🌾 ใช้ Sprout ที่ฟิลด์: %s | โหมด: %s", fieldName, mode))
                         end
                     end
-
                     task.wait(delayTime)
                 end
             end
@@ -96,23 +94,21 @@ local function startAutoSprout(mode)
     end)
 end
 
--- ♻️ ปลูกต่อหลังตัวละครตาย
+-- ♻️ ใช้งานต่อหลังตาย
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
     if rejoinAfterDeath and autoPlantEnabled then
         task.wait(2)
         startAutoSprout(autoMode)
-        if enableLog then
-            print("♻️ ตัวละครรีสปอน — ใช้ Sprout ต่ออัตโนมัติ")
-        end
+        if enableLog then print("♻️ ตัวละครรีสปอน — ใช้งานต่ออัตโนมัติ") end
     end
 end)
 
--- 🧭 UI ของแต่ละโหมด
+-- 🧭 สร้าง UI ของแต่ละโหมด
 local function setupTab(tab, modeName)
     tab:Dropdown({
-        Title = "เลือกฟิลด์ที่จะใช้ Sprout",
+        Title = "เลือกฟิลด์สำหรับ Sprout",
         Values = fields,
         Value = selectedFields,
         Multi = true,
@@ -130,37 +126,37 @@ local function setupTab(tab, modeName)
             autoMode = modeName
             if state then
                 startAutoSprout(modeName)
-                if enableLog then print("🚀 เริ่ม Auto Sprout โหมด:", modeName) end
+                if enableLog then print("🚀 เปิด Auto Sprout โหมด:", modeName) end
             else
                 if enableLog then print("🛑 ปิด Auto Sprout โหมด:", modeName) end
             end
         end
     })
-
-    -- ✅ ถ้าตั้งค่า EnableAutoPlant = true ให้เริ่มทันที
-    if autoPlantEnabled and autoMode == modeName then
-        task.spawn(function()
-            task.wait(1)
-            startAutoSprout(modeName)
-            if enableLog then
-                print("🌱 เริ่ม Auto Sprout อัตโนมัติจาก config:", modeName)
-            end
-        end)
-    end
 end
 
--- 🪴 สร้างแท็บทั้งหมด
+-- 🪴 โหลดแท็บทั้งหมด
 setupTab(Tabs.Any, "Any")
 setupTab(Tabs.Day, "Day")
 setupTab(Tabs.Night, "Night")
 
--- 🚀 เริ่มใช้งานอัตโนมัติทันทีถ้ามีใน Config
-if autoPlantEnabled then
-    task.spawn(function()
-        task.wait(2)
-        startAutoSprout(autoMode)
-        print("🌾 เริ่ม Auto Sprout จาก Config ...")
-    end)
-end
+-- ✅ Smart Load: รอจน UI โหลดครบจริงก่อนเริ่ม
+task.spawn(function()
+    -- รอจนกว่า WindUI จะสร้างทุก Tab ครบ
+    repeat
+        task.wait(0.2)
+    until #Window:GetChildren() >= 3  -- มีครบ 3 แท็บแน่ ๆ (Any, Day, Night)
 
-print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน")
+    if autoPlantEnabled then
+        task.wait(0.5) -- รอเผื่อ callback สร้างเสร็จ
+        startAutoSprout(autoMode)
+        if enableLog then
+            print("🌱 [SmartLoad] UI โหลดครบ → เริ่ม Auto Sprout อัตโนมัติ | โหมด:", autoMode)
+        end
+    else
+        if enableLog then
+            print("🕓 [SmartLoad] UI โหลดครบแล้ว แต่ EnableAutoPlant = false")
+        end
+    end
+end)
+
+print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน (Smart Load Mode)")
