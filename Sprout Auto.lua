@@ -5,7 +5,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 local cfg = getgenv().AutoPlantConfig or {}
 local set = getgenv().AutoPlantSettings or {}
 
--- ค่าพื้นฐาน (ถ้าไม่มีใน getgenv)
+-- 🌾 ค่าพื้นฐานจาก Config
 local selectedFields = cfg.SelectedFields or { "Sunflower Field" }
 local autoMode = cfg.Mode or "Any"
 local autoPlantEnabled = cfg.EnableAutoPlant or false
@@ -19,14 +19,14 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 -- สร้างหน้าต่างหลัก
 local Window = WindUI:CreateWindow({
-    Title = "Bee Swarm Simulator - Auto Plant",
-    Size = UDim2.fromOffset(320, 300),
+    Title = "🐝 Bee Swarm Simulator - Auto Plant",
+    Size = UDim2.fromOffset(340, 310),
     Theme = "Dark",
     SideBarWidth = 200,
     Transparent = true
 })
 
--- Tabs
+-- Tabs UI
 local Tabs = {
     Any = Window:Tab({ Title = "🌱 ปลูกไม่สนเวลา" }),
     Day = Window:Tab({ Title = "☀️ ปลูกตอนเช้า" }),
@@ -88,7 +88,6 @@ local function startAutoPlant(mode)
                             print(string.format("🌱 ปลูก Magic Bean ที่ฟิลด์: %s | โหมด: %s", fieldName, mode))
                         end
                     end
-
                     task.wait(delayTime)
                 end
             end
@@ -96,17 +95,20 @@ local function startAutoPlant(mode)
     end)
 end
 
--- 🔁 เมื่อผู้เล่นตายหรือรีสปอน
+-- 🔁 กลับมาปลูกต่อหลังตัวละครตาย
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
     if rejoinAfterDeath and autoPlantEnabled then
         task.wait(2)
         startAutoPlant(autoMode)
+        if enableLog then
+            print("♻️ ตัวละครรีสปอน — กลับมาปลูกต่ออัตโนมัติ")
+        end
     end
 end)
 
--- 🧭 ฟังก์ชันสร้าง UI สำหรับแต่ละแท็บ
+-- 🧭 ฟังก์ชันสร้าง UI ของแต่ละแท็บ
 local function setupTab(tab, modeName)
     tab:Dropdown({
         Title = "เลือกฟิลด์ที่จะปลูก",
@@ -121,27 +123,32 @@ local function setupTab(tab, modeName)
 
     tab:Toggle({
         Title = "เปิด/ปิด Auto Plant",
-        Default = (autoPlantEnabled and autoMode == modeName),
+        Default = (autoPlantEnabled and autoMode == modeName), -- ✅ อ่านค่าจาก config
         Callback = function(state)
             autoPlantEnabled = state
             autoMode = modeName
             if state then
                 startAutoPlant(modeName)
-                if enableLog then
-                    print("🚀 เริ่ม Auto Plant โหมด:", modeName)
-                end
+                if enableLog then print("🚀 เริ่ม Auto Plant โหมด:", modeName) end
             else
-                if enableLog then
-                    print("🛑 ปิด Auto Plant โหมด:", modeName)
-                end
+                if enableLog then print("🛑 ปิด Auto Plant โหมด:", modeName) end
             end
         end
     })
 end
 
--- 🪴 สร้าง UI ทั้งสามโหมด
+-- 🌾 สร้างแท็บทั้งสาม
 setupTab(Tabs.Any, "Any")
 setupTab(Tabs.Day, "Day")
 setupTab(Tabs.Night, "Night")
+
+-- 🚀 เริ่มปลูกอัตโนมัติเมื่อ EnableAutoPlant = true
+if autoPlantEnabled then
+    task.spawn(function()
+        task.wait(2)
+        print("🌱 เริ่มปลูกอัตโนมัติจาก Config ...")
+        startAutoPlant(autoMode)
+    end)
+end
 
 print("✅ ระบบ Auto Plant โหลดสำเร็จ! พร้อมทำงาน")
