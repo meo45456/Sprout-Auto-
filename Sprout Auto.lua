@@ -1,4 +1,4 @@
---[[ 🌱 Bee Swarm Auto Sprout System - Smart Load Version (by Somsi & Meo, Final 2025) ]]
+--[[ 🌱 Bee Swarm Auto Sprout System - Smart Load v2 (by Somsi & Meo, Final 2025) ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 -- ✅ โหลด config จาก Loader
@@ -25,7 +25,7 @@ local Window = WindUI:CreateWindow({
     Transparent = true
 })
 
--- 🧭 แท็บ
+-- 🧭 แท็บ UI
 local Tabs = {
     Any = Window:Tab({ Title = "🌱 ใช้ Sprout ทุกเวลา" }),
     Day = Window:Tab({ Title = "☀️ ใช้เฉพาะกลางวัน" }),
@@ -105,7 +105,7 @@ player.CharacterAdded:Connect(function(newChar)
     end
 end)
 
--- 🧭 สร้าง UI ของแต่ละโหมด
+-- 🧭 ฟังก์ชันสร้าง UI สำหรับแต่ละโหมด
 local function setupTab(tab, modeName)
     tab:Dropdown({
         Title = "เลือกฟิลด์สำหรับ Sprout",
@@ -139,15 +139,17 @@ setupTab(Tabs.Any, "Any")
 setupTab(Tabs.Day, "Day")
 setupTab(Tabs.Night, "Night")
 
--- ✅ Smart Load: รอจน UI โหลดครบจริงก่อนเริ่ม
+-- ✅ Smart Load v2: รอจน UI พร้อมจริงก่อนเริ่ม
 task.spawn(function()
-    -- รอจนกว่า WindUI จะสร้างทุก Tab ครบ
+    -- 🔄 รอจนกว่า Tabs ทั้ง 3 จะถูกสร้างจริง
     repeat
         task.wait(0.2)
-    until #Window:GetChildren() >= 3  -- มีครบ 3 แท็บแน่ ๆ (Any, Day, Night)
+    until (Tabs.Any and Tabs.Day and Tabs.Night)
+
+    -- รอเผื่อ layout ของ UI โหลดครบ
+    task.wait(0.5)
 
     if autoPlantEnabled then
-        task.wait(0.5) -- รอเผื่อ callback สร้างเสร็จ
         startAutoSprout(autoMode)
         if enableLog then
             print("🌱 [SmartLoad] UI โหลดครบ → เริ่ม Auto Sprout อัตโนมัติ | โหมด:", autoMode)
@@ -159,4 +161,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน (Smart Load Mode)")
+print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน (Smart Load v2)")
