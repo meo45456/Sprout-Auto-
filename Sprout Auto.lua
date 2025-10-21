@@ -1,57 +1,30 @@
---[[ 🌱 Bee Swarm Auto Sprout System - Smart Load v3 (by Somsi & Meo, 2025 Final Fix) ]]
+--[[ 🌱 Bee Swarm Auto Sprout - Direct Mode Logger Pro (by Somsi & Meo, 2025) ]]
 if not game:IsLoaded() then game.Loaded:Wait() end
 
--- ✅ โหลด config จาก Loader
+print("🐝 [AutoSprout] เริ่มโหลดระบบอัตโนมัติ...")
+
+-- โหลด config
 local cfg = getgenv().AutoPlantConfig or {}
 local set = getgenv().AutoPlantSettings or {}
 
-local selectedFields = cfg.SelectedFields or { "Sunflower Field" }
-local autoMode = cfg.Mode or "Any"
-local autoPlantEnabled = cfg.EnableAutoPlant or false
-local delayTime = cfg.Delay or 5
-local enableLog = set.EnableLog or false
-local rejoinAfterDeath = set.RejoinAfterDeath or true
+local EnableAuto = cfg.EnableAutoPlant or true
+local Mode = cfg.Mode or "Any" -- "Any" | "Day" | "Night"
+local SelectedFields = cfg.SelectedFields or { "Coconut Field" }
+local Delay = cfg.Delay or 5
+local EnableLog = set.EnableLog or true
+local RejoinAfterDeath = set.RejoinAfterDeath or true
 
--- 🧩 โหลด WindUI Framework
-local Version = "1.6.41"
-local WindUILoader = "https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua"
-local success, WindUI = pcall(function()
-    return loadstring(game:HttpGet(WindUILoader))()
-end)
-if not success then
-    warn("[AutoSprout] ❌ โหลด WindUI ไม่สำเร็จ:", WindUI)
-    return
-end
-
--- 🪟 สร้างหน้าต่างหลัก (เพิ่ม Folder เพื่อป้องกัน config error)
-local Window = WindUI:CreateWindow({
-    Title = "🌱 Bee Swarm Simulator - Auto Sprout",
-    Size = UDim2.fromOffset(340, 310),
-    Theme = "Dark",
-    SideBarWidth = 200,
-    Transparent = true,
-    Folder = "SproutAutoConfig", -- ✅ Fix: WindUI ต้องการ Folder
-    HideSearchBar = true,
-    ScrollBarEnabled = false
-})
-
--- 🧭 แท็บ
-local Tabs = {
-    Any = Window:Tab({ Title = "🌱 ใช้ Sprout ทุกเวลา" }),
-    Day = Window:Tab({ Title = "☀️ ใช้เฉพาะกลางวัน" }),
-    Night = Window:Tab({ Title = "🌙 ใช้เฉพาะกลางคืน" })
-}
-
--- 🔧 ตัวแปรหลักในเกม
+-- ตัวแปรหลักในเกม
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local Event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("PlayerActivesCommand")
 
--- 🗺️ พิกัดฟิลด์ทั้งหมด
+-- พิกัดฟิลด์ทั้งหมด
 local fieldPositions = {
     ["Sunflower Field"] = Vector3.new(-213.106, 3.998, 172.139),
     ["Dandelion Field"] = Vector3.new(-31.570, 3.998, 220.934),
@@ -72,96 +45,67 @@ local fieldPositions = {
     ["Coconut Field"] = Vector3.new(-263.197, 71.421, 464.853)
 }
 
-local fields = {}
-for name, _ in pairs(fieldPositions) do table.insert(fields, name) end
+-- ตัวนับจำนวนที่ปลูก
+local SproutCount = 0
 
--- 🌱 ฟังก์ชันปลูก Sprout
-local function startAutoSprout(mode)
+-- ฟังก์ชันเช็กเวลา
+local function isTimeForMode()
+    local hour = tonumber(string.sub(Lighting.TimeOfDay, 1, 2))
+    if Mode == "Any" then
+        return true
+    elseif Mode == "Day" then
+        return hour >= 6 and hour < 18
+    elseif Mode == "Night" then
+        return hour < 6 or hour >= 18
+    end
+    return false
+end
+
+-- ฟังก์ชันหลัก
+local function startAutoSprout()
+    if not EnableAuto then
+        warn("🛑 [AutoSprout] ระบบปลูกถูกปิดไว้ใน config")
+        return
+    end
+
+    print("✅ [AutoSprout] เริ่มทำงานในโหมด:", Mode)
     task.spawn(function()
-        while autoPlantEnabled do
-            for _, fieldName in ipairs(selectedFields) do
+        while EnableAuto do
+            for _, fieldName in ipairs(SelectedFields) do
                 local pos = fieldPositions[fieldName]
-                if pos and humanoidRootPart then
+                if pos then
                     humanoidRootPart.CFrame = CFrame.new(pos)
-                    local time = Lighting.TimeOfDay
-                    local canUse = (
-                        mode == "Any" or
-                        (mode == "Day" and string.sub(time, 1, 2) >= "06" and string.sub(time, 1, 2) < "18") or
-                        (mode == "Night" and (string.sub(time, 1, 2) < "06" or string.sub(time, 1, 2) >= "18"))
-                    )
-
-                    if canUse then
+                    if isTimeForMode() then
                         Event:FireServer({ Name = "Sprout" })
-                        if enableLog then
-                            print(string.format("🌾 ใช้ Sprout ที่ฟิลด์: %s | โหมด: %s", fieldName, mode))
+                        SproutCount += 1
+
+                        print(string.format("🌾 ปลูก Sprout #%d | ฟิลด์: %s | เวลา: %s", SproutCount, fieldName, Lighting.TimeOfDay))
+                    else
+                        if EnableLog then
+                            print(string.format("🕓 เวลานี้ไม่ตรงโหมด (%s) ข้ามการปลูก | เวลา: %s", Mode, Lighting.TimeOfDay))
                         end
                     end
-                    task.wait(delayTime)
+                    task.wait(Delay)
+                else
+                    warn("⚠️ [AutoSprout] ไม่พบฟิลด์:", fieldName)
                 end
             end
         end
     end)
 end
 
--- ♻️ ใช้งานต่อหลังตาย
+-- กรณีตัวละครตาย
 player.CharacterAdded:Connect(function(newChar)
-    character = newChar
-    humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
-    if rejoinAfterDeath and autoPlantEnabled then
+    if RejoinAfterDeath then
+        character = newChar
+        humanoidRootPart = newChar:WaitForChild("HumanoidRootPart")
         task.wait(2)
-        startAutoSprout(autoMode)
-        if enableLog then print("♻️ ตัวละครรีสปอน — ใช้งานต่ออัตโนมัติ") end
+        print("♻️ [AutoSprout] ตัวละครรีสปอนแล้ว กำลังกลับไปปลูกต่อ...")
+        startAutoSprout()
     end
 end)
 
--- 🧭 สร้าง UI Tab
-local function setupTab(tab, modeName)
-    tab:Dropdown({
-        Title = "เลือกฟิลด์สำหรับ Sprout",
-        Values = fields,
-        Value = selectedFields,
-        Multi = true,
-        AllowNone = true,
-        Callback = function(options)
-            selectedFields = options
-        end
-    })
+-- เริ่มทำงาน
+startAutoSprout()
 
-    tab:Toggle({
-        Title = "เปิด/ปิด Auto Sprout",
-        Default = (autoPlantEnabled and autoMode == modeName),
-        Callback = function(state)
-            autoPlantEnabled = state
-            autoMode = modeName
-            if state then
-                startAutoSprout(modeName)
-                if enableLog then print("🚀 เปิด Auto Sprout โหมด:", modeName) end
-            else
-                if enableLog then print("🛑 ปิด Auto Sprout โหมด:", modeName) end
-            end
-        end
-    })
-end
-
-setupTab(Tabs.Any, "Any")
-setupTab(Tabs.Day, "Day")
-setupTab(Tabs.Night, "Night")
-
--- ✅ Smart Load v3: ปลอดภัยต่อ WindUI ทุกเวอร์ชัน
-task.spawn(function()
-    repeat task.wait(0.3) until Tabs.Any and Tabs.Day and Tabs.Night
-    task.wait(1) -- รอให้ UI สร้างเสร็จจริง
-
-    if autoPlantEnabled then
-        startAutoSprout(autoMode)
-        if enableLog then
-            print("🌱 [SmartLoad] UI โหลดครบ → เริ่ม Auto Sprout อัตโนมัติ | โหมด:", autoMode)
-        end
-    else
-        if enableLog then
-            print("🕓 [SmartLoad] UI โหลดครบแล้ว แต่ EnableAutoPlant = false")
-        end
-    end
-end)
-
-print("✅ ระบบ Auto Sprout โหลดสำเร็จ! พร้อมทำงาน (Smart Load v3)")
+print("✅ [AutoSprout] ระบบโหลดสำเร็จ พร้อมทำงานโดยตรง (No UI Mode)")
